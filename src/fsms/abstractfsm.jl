@@ -126,7 +126,7 @@ function showlabel(label)
     if typeof(label) <: Tuple
         return "($(join([showlabel(l) for l in label], ",")))"
     end
-    "$(label)"
+    escape_string(string(label))
 end
 
 function Base.show(io::IO, ::MIME"image/svg+xml", fsm::AbstractFSM)
