@@ -36,7 +36,7 @@ function _elmul_sm_dm!(out, X::AbstractSparseMatrix{T1}, y::AbstractArray{T2}) w
     length(y) in [m, n, m*n] || throw(DimensionMismatch("arrays could not be broadcast to a common size; got a matrix ($m, $n) and $(length(y))"))
     rows = rowvals(X)
     vals = nonzeros(X)
-    for j = 1:n
+    for j in 1:n
        for i in nzrange(X, j)
           row = rows[i]
           val = vals[i]
@@ -71,7 +71,27 @@ end
 function matmul!(out, X::AbstractSparseMatrix{T1}, y::AbstractArray{T2}) where {T1,T2}
     T = promote_type(T1, T2)
     fill!(out, zero(T))
-    mul!(out, X, y, one(T), zero(T))
+    mul!(out, X, y)
+end
+
+function matmul!(out, X::AbstractSparseMatrix{T1}, y::AbstractVector{T2}) where {T1,T2}
+    T = promote_type(T1, T2)
+    fill!(out, zero(T))
+    if sparsity_level(X) > 0.1
+        mul!(out, X, y)
+    end
+    m, n = size(X)
+    first(size(y)) == n || throw(DimensionMismatch("arrays could not be broadcast to a common size; got a matrix ($m, $n) and $(length(y))"))
+    rows = rowvals(X)
+    vals = nonzeros(X)
+    for j in 1:n
+        for i in nzrange(X, j)
+            row = rows[i]
+            val = vals[i]
+            out[row] += val * _getindex(y, j, 1)
+        end
+    end
+    return out
 end
 
 matmul!(out, X::CuMatrix, Y::CuMatrix) = mul_dmdm!(out, X, Y)
